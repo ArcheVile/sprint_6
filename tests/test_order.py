@@ -6,57 +6,59 @@ from pages.order_page import OrderPage
 
 @allure.feature("Тесты заказа самоката")
 class TestOrderScooter:
-    UPPER_ORDER_DATA = {
-        "name": "Иван",
-        "surname": "Иванов",
-        "address": "Москва, ул. Ленина, 1",
-        "metro": "Чистые пруды",
-        "phone": "+79998887766",
-        "date": "01.01.2023",
-        "rental_period": "сутки",
-        "color": "black",
-        "comment": "Тестовый заказ"
-    }
+    ORDER_DATA = [
+        pytest.param(
+            {
+                "name": "Иван",
+                "surname": "Иванов",
+                "address": "Москва, ул. Ленина, 1",
+                "metro": "Чистые пруды",
+                "phone": "+79998887766",
+                "date": "01.01.2023",
+                "rental_period": "сутки",
+                "color": "black",
+                "comment": "Тестовый заказ"
+            },
+            0,  # индекс верхней кнопки
+            id="upper_button_order"
+        ),
+        pytest.param(
+            {
+                "name": "Петр",
+                "surname": "Петров",
+                "address": "Санкт-Петербург, Невский пр., 10",
+                "metro": "Адмиралтейская",
+                "phone": "+79997776655",
+                "date": "02.02.2023",
+                "rental_period": "двое суток",
+                "color": "grey",
+                "comment": "Еще один тестовый заказ"
+            },
+            1,  # индекс нижней кнопки
+            id="lower_button_order"
+        )
+    ]
 
-    LOWER_ORDER_DATA = {
-        "name": "Петр",
-        "surname": "Петров",
-        "address": "Санкт-Петербург, Невский пр., 10",
-        "metro": "Адмиралтейская",
-        "phone": "+79997776655",
-        "date": "02.02.2023",
-        "rental_period": "двое суток",
-        "color": "grey",
-        "comment": "Еще один тестовый заказ"
-    }
-
-    @allure.title("Заказ самоката через верхнюю кнопку")
-    def test_order_via_upper_button(self, browser):
+    @pytest.fixture
+    def setup_order(self, browser, request):
         main_page = MainPage(browser)
         order_page = OrderPage(browser)
 
         with allure.step("Открыть главную страницу"):
-            main_page.wait_for_load()
+            main_page.open()
+            main_page.accept_cookies()
 
-        with allure.step("Нажать верхнюю кнопку заказа"):
-            main_page.click_upper_order_button()
+        button_index = request.param[1]
+        with allure.step(f"Нажать кнопку заказа (индекс {button_index})"):
+            main_page.click_order_button(button_index)
 
-        self._complete_order_flow(order_page, self.UPPER_ORDER_DATA)
+        return order_page, request.param[0]
 
-    @allure.title("Заказ самоката через нижнюю кнопку")
-    def test_order_via_lower_button(self, browser):
-        main_page = MainPage(browser)
-        order_page = OrderPage(browser)
+    @pytest.mark.parametrize("setup_order", ORDER_DATA, indirect=True)
+    @allure.title("Заказ самоката через разные кнопки")
+    def test_order_scooter(self, setup_order):
+        order_page, order_data = setup_order
 
-        with allure.step("Открыть главную страницу"):
-            main_page.wait_for_load()
-
-        with allure.step("Нажать нижнюю кнопку заказа"):
-            main_page.click_lower_order_button()
-
-        self._complete_order_flow(order_page, self.LOWER_ORDER_DATA)
-
-    def _complete_order_flow(self, order_page, order_data):
         with allure.step("Заполнить первую страницу заказа"):
             order_page.fill_first_page(
                 order_data["name"],
