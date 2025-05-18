@@ -1,26 +1,39 @@
 import pytest
-from selenium.webdriver.common.by import By
+import allure
 from pages.main_page import MainPage
+from urls import Urls
 
 
-def test_scooter_logo_redirect(browser):
-    main_page = MainPage(browser)
-    main_page.wait_for_load()
-    main_page.click_scooter_logo()
-    assert browser.current_url == "https://qa-scooter.praktikum-services.ru/"
+@allure.feature("Тесты редиректов по логотипам")
+class TestLogoRedirects:
+    @allure.title("Проверка редиректа на главную через логотип Самоката")
+    def test_scooter_logo_redirect(self, browser):
+        with allure.step("Открыть главную страницу"):
+            main_page = MainPage(browser)
+            main_page.wait_for_load()
 
+        with allure.step("Кликнуть на логотип Самоката"):
+            main_page.click_scooter_logo()
 
-def test_yandex_logo_redirect(browser):
-    main_page = MainPage(browser)
-    main_page.wait_for_load()
-    main_page.click_yandex_logo()
+        with allure.step("Проверить URL после редиректа"):
+            assert main_page.current_url == Urls.MAIN_PAGE, \
+                f"Ожидался URL {Urls.MAIN_PAGE}, получен {main_page.current_url}"
 
-    # Переключение на новую вкладку
-    browser.switch_to.window(browser.window_handles[1])
+    @allure.title("Проверка редиректа на Дзен через логотип Яндекса")
+    def test_yandex_logo_redirect(self, browser):
+        with allure.step("Открыть главную страницу"):
+            main_page = MainPage(browser)
+            main_page.wait_for_load()
 
-    # Ожидание редиректа на Дзен
-    WebDriverWait(browser, 10).until(
-        lambda d: "dzen.ru" in d.current_url
-    )
+        with allure.step("Кликнуть на логотип Яндекса"):
+            main_page.click_yandex_logo()
 
-    assert "dzen.ru" in browser.current_url
+        with allure.step("Переключиться на новую вкладку"):
+            main_page.switch_to_tab(1)
+
+        with allure.step("Дождаться редиректа на Дзен"):
+            main_page.wait_for_url_contains("dzen.ru")
+
+        with allure.step("Проверить URL Дзена"):
+            assert "dzen.ru" in main_page.current_url, \
+                f"URL {main_page.current_url} не содержит 'dzen.ru'"
